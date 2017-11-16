@@ -94,40 +94,95 @@ int main(int argc , char *argv[])
     return 0;
 }
  
+int checkUsernames(const char * uname) {
+
+    int i;
+
+    for (i = 0; i < nUsernames; i++) {
+        if (strcmp(uname, usernames[i]) == 0) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
 /*
  * This will handle connection for each client
  * */
 void *connection_handler(void *socket_desc)
 {
+
+    usernames[nUsernames] = "marv";
+    passwords[nUsernames] = "smarv";
+    nUsernames++;
     //Get the socket descriptor
     int sock = *(int*)socket_desc;
     int read_size;
-    char *message , client_message[2000];
+    char *message , client_message[2000], server_message[2000];
      
     //Send some messages to the client
     message = "Greetings! Welcome to chat! Enter a username\n";
     write(sock , message , strlen(message));
 
-    while( (read_size = recv(sock , client_message , 2000 , 0)) > 0 )
-    {
-        //end of string marker
-		client_message[read_size] = '\0';
-        printf("message: %s\n", client_message);
-        /*
-        int check = checkUsernames(client_message);
-        if (check == -1) {
-            printf("Welcome new user!\n");
-            printf("Enter a password for us to save!\n");
-        } else {
-            printf("Welcome returning user!\nEnter password:");
-        }
-*/
-		//Send the message back to client
-        write(sock , client_message , strlen(client_message));
-		
-		//clear the message buffer
-		memset(client_message, 0, 2000);
+    read_size = recv(sock , client_message , 2000 , 0);
+    if (read_size <= 0) {
+        printf("error!");
     }
+    //end of string marker
+    client_message[read_size] = '\0';
+    printf("message: %s\n", client_message);
+    
+    int check = checkUsernames(client_message);
+    const char * thisUser = client_message;
+    if (check == -1) {
+        printf("Welcome new user!\n");     
+        printf("Enter a password for us to save!\n");
+        message = "Enter a password for us to save!\n";
+    } else {
+        printf("Welcome returning user!\nEnter password:");
+        message = "Welcome returning user!\nEnter password:";
+    }
+    //Send the message back to client
+    write(sock , message , strlen(message));
+    memset(client_message, 0, 2000);
+    read_size = recv(sock, client_message, 2000, 0);
+
+    client_message[read_size] = '\0';
+    if (check >= 0) {
+        printf("Check: %d\n", check);
+        printf("returning user\n");
+        while(1) {
+            if (strcmp(client_message, passwords[check]) == 0) {
+                printf("password matched\n");
+                break;
+            } else {
+                printf("incorrect password.\nTry again:");
+                message = "Incorrect password.\nTry again:";
+                write(sock, message, strlen(message));
+                memset(client_message, 0, 2000);
+                read_size = recv(sock, client_message, 2000, 0);
+            }
+        }
+    } else {
+        usernames[nUsernames] = thisUser;
+        printf("new user, creating password\n");
+        passwords[nUsernames] = client_message;
+        printf("password created for user: %s\npassword: %s\n", usernames[nUsernames], passwords[nUsernames]);
+        nUsernames++;
+    }
+
+    message = "SUCCESS";
+    write(sock, message, strlen(message));
+    memset(client_message, 0, 2000);
+
+
+    if (read_size <= 0 ) {
+        printf("error\n");
+    }
+
+    //clear the message buffer
+    memset(client_message, 0, 2000);
 
 
     message = "Now type something and i shall repeat what you type \n";
