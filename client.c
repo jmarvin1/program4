@@ -122,6 +122,94 @@ int main(int argc, char * argv[])
 		close(s);
 		exit(1);
 	}
+
+    //receive initial message from server
+    int rSize;
+    char rBuffer[BUFFER];
+    if ((rSize = recv(s, rBuffer, BUFFER, 0)) <= 0) 
+    {
+        perror("Error receiving First ack\n");
+        close(s);
+        //printf("size of received: %d\n", rSize);
+        //printf("From Server: %s\n", rBuffer);
+        exit(1);
+    }
+    //send username
+    int sizeSent;
+    if ((sizeSent = send(s, username, strlen(username), 0)) < 0)
+    {
+        perror("Error sending sizeFile\n");
+        close(s);
+        //free(buf);
+        //fclose(fp);
+        exit(1);
+    }
+    //receive prompt for password
+    char passBuff[BUFFER];
+    if ((rSize = recv(s, passBuff, BUFFER, 0))<=0)
+    {
+        perror("Error receiving password prompt\n");
+        close(s);
+        exit(1);
+    }
+    char pass[BUFFER];
+    printf("%s\n",passBuff);
+    scanf("%s",pass);
+    //send pass to server
+    // int sizeSent;
+    if ((sizeSent = send(s, pass, strlen(pass), 0)) < 0)
+    {
+        perror("Error sending password\n");
+        close(s);
+        //free(buf);
+        //fclose(fp);
+        exit(1);
+    }
+   //wait for success/failure of password given
+    char successBuff[BUFFER];
+    if(( rSize = recv(s, successBuff, BUFFER, 0))<=0)
+    {
+        perror("Error receiving confirmation of password\n");
+        close(s);
+        exit(1);
+    }
+    if(strcmp(successBuff,"SUCCESS")==0)
+    {
+        //password given was good
+        //send RTS
+        char action[BUFFER]= "RTS\0";
+        if((sizeSent = send(s, action, strlen(action),0))< 0)
+        {
+            perror("Error sending RTS\n");
+            close(s);
+            exit(1);
+        }
+    }
+    else
+    {
+        while(strcmp(successBuff, "SUCCESS")!=0)
+        {
+
+            bzero(successBuff,BUFFER);
+            bzero(pass,BUFFER);
+            printf("WRONG! enter pass again:\n");
+            scanf("%s",pass);
+            //send pass
+            if((sizeSent = send(s, pass, strlen(pass),0)) < 0)
+            {
+                perror("Error sending new pass\n");
+                close(s);
+                exit(1);
+            }
+            if((rSize = recv(s, successBuff, BUFFER, 0) <=0))
+            {
+                perror("error receiving confirmation of other pass attempt\n");
+                close(s);
+                exit(1);
+            }
+         } 
+     }
+    
     //prompts and function calls   
     while (1) 
     {
