@@ -13,22 +13,25 @@
 #include<pthread.h> //for threading , link with lpthread
 #define MAX_THREADS 10
 
-int clients[MAX_THREADS] = {0};
-const char * Usernames[MAX_THREADS];
-int currClient = 0;
-int nUsernames = 0;
-const char * usernames[100];
-const char * passwords[100];
+struct client {
+    int sInt;
+    char uname[100];
+};
 
+
+struct client clients[100];
+int currUsers;
 
 //the thread function
 void *connection_handler(void *);
 int checkUsername(const char *);
-void private(const char *);
+void sendPrivate(int, char *);
 void broadcast(int);
 const char * getUsers(const char *);
 int writeUP(const char *, const char *);
 const char * getPassword(const char *);
+void addName(const char *, int);
+char * printActive(char *);
 
 int main(int argc , char *argv[])
 {
@@ -72,13 +75,13 @@ int main(int argc , char *argv[])
 	
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
-        if (currClient >= MAX_THREADS) {
+        if (currUsers >= MAX_THREADS) {
             puts("max number of connections reached. Accepting no more clients");
             continue;
         }
         puts("Connection accepted");
         
-        clients[currClient++] = client_sock;
+        clients[currUsers++].sInt = client_sock;
 
         if( pthread_create( &thread_id , NULL ,  connection_handler , (void*) &client_sock) < 0)
         {
@@ -130,19 +133,24 @@ const char * getPassword(const char * username) {
         //printf("Retrieved line of length %zu :\n", read);
         //printf("%s\n", line);
         char *ch1;
-        ch1 = strtok(line, ":");
-        
         char name[100];
+        char pw[100];
+        ch1 = strtok(line, ":"); 
         strcpy(name, ch1);
         ch1 = strtok(NULL, ":");
+        strcpy(pw, ch1);
         printf("ch1: %s\n", ch1);
         printf("uname: %s, ch1: %s\n", username, name);
         if (strcmp(username, name) == 0) {
             fclose(fp);
             if (line)
                 free(line);
-            printf("password: %s\n", ch1);
-            return ch1;
+            printf("password: %s\n", pw);
+            pw[strlen(pw)-1]='\0';
+            char *result = (char *)malloc(strlen(pw)+1);
+            strcpy(result,pw);
+            
+            return result;
         }
         //printf("password\n");
         //printf("%s\n", ch);
@@ -239,13 +247,15 @@ void *connection_handler(void *socket_desc)
 
     client_message[read_size] = '\0';
     if (check >= 0) {
-        printf("Check: %d\n", check);
+     //   printf("Check: %d\n", check);
         printf("returning user\n");
         while(1) {
+ //           printf("cpassword: %s, gpassword: %s\n", client_message, getPassword(thisUser));
             if (strcmp(client_message, getPassword(thisUser)) == 0) {
                 printf("password matched\n");
                 break;
             } else {
+       //         printf("these arent the same\n%s|\n%s|\n", client_message, getPassword(thisUser));
                 printf("incorrect password.\nTry again:");
                 message = "Incorrect password.\nTry again:";
                 write(sock, message, strlen(message));
@@ -254,13 +264,13 @@ void *connection_handler(void *socket_desc)
             }
         }
     } else {
-        printf("new user, creating password\n");
+   //     printf("new user, creating password\n");
         printf("password created for user: %s\npassword: %s\n", thisUser, client_message);
         writeUP(thisUser, client_message);
     }
     
     message = "SUCCESS";
-    Usernames[currClient - 1] = thisUser;
+    addName(thisUser, sock);
     write(sock, message, strlen(message));
     memset(client_message, 0, 2000);
 
@@ -282,7 +292,7 @@ void *connection_handler(void *socket_desc)
     {
         //end of string marker
 		client_message[read_size] = '\0';
-	
+        printf("Message: %s\n", client_message);	
         if (strcmp(client_message, "B") == 0) {
             printf("broadcast\n");
             message = "broad\n";
@@ -316,4 +326,55 @@ void *connection_handler(void *socket_desc)
     }
          
     return 0;
-} 
+}
+
+void addName(const char * name, int sock) {
+
+    int i;
+
+    for (i = 0; i < currUsers; ++i) {
+        if (clients[i].sInt = sock) {
+            strcpy(clients[i].uname, name);
+        }
+        return;
+    }
+
+    printf("No user found\n");
+}
+
+char * printActive(char * name) {
+
+    char * result = "Active Users\n";
+    int i;
+    printf("Activer Users:\n");
+    for (i = 0; i < currUsers; i++) {
+        //if (strcmp(name, clients[i].uname) != 0) {
+            printf("%s\n", clients[i].uname);
+            int newSize = strlen(result) + strlen(clients[i].uname) + 1;
+            char * newBuffer = (char *)malloc(newSize);
+            strcpy(newBuffer,result);
+            strcat(newBuffer,clients[i].uname); // or strncat
+            strcat(newBuffer, "\n");
+            //free(result);
+            result = newBuffer;
+     //   }
+    }
+
+    return result;
+}
+void sendPrivate(int sock, char * thisUser) {
+
+    char client_message[2000];
+    char * message = printActive(thisUser);
+    write(sock, message, strlen(message));
+    memset(client_message, 0, 2000);
+    recv(sock, client_message, 2000, 0);
+    char to[100];
+    strcpy(to, message);
+    memset(client_message, 0, 2000);
+    recv(sock, client_message, 2000, 0);
+    //sendPrivate(client_message, thisUser, to);
+
+
+
+}

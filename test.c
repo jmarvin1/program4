@@ -36,7 +36,9 @@ const char * getPassword(const char * username) {
         printf("Retrieved line of length %zu :\n", read);
         printf("%s\n", line);
         char *ch;
+        char name[100];
         ch = strtok(line, ":");
+        strcpy(name, ch);
         ch = strtok(NULL, ":");
         printf("password\n");
         printf("%s\n", ch); 
