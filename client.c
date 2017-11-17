@@ -33,8 +33,20 @@ int private_message(int s)
         close(s);
         exit(1);
     }
+    while(strlen(userList)<=0){
+        printf("Entering recv loop\n");
+        if((rSize=recv(s, userList, BUFFER, 0)<=0))
+        {
+            perror("Error receiving user list in loop\n");
+            close(s);
+            exit(1);
+        }
+   }
+
     char  userChoice[BUFFER];
-    printf("%s",userList);
+    //printf("Choose a user from the list to print to: \n");
+    printf("LIST: %s\n",userList);
+    fflush(stdout);
     printf("Choose an user from the list to talk to: \n");
     scanf("%s",userChoice);
     //send user choice
@@ -47,6 +59,7 @@ int private_message(int s)
     //send message
     char message[BUFFER];
     printf("Enter the message you want to send: ");
+    scanf("%s",message);
     if((sendSize = send(s, message, strlen(message), 0))<0)
     {
         perror("Error sending the message\n");
@@ -255,14 +268,14 @@ int main(int argc, char * argv[])
          } 
      }
     //create thread to handle messages from other clients
-    pthread_t thread;
-    int rc = pthread_create(&thread, NULL, handle_server_stuff, (void*)&s);
+    //pthread_t thread;
+    /*int rc = pthread_create(&thread, NULL, handle_server_stuff, (void*)&s);
     if(rc)
     {
         perror("Error creating thread\n");
         close(s);
         exit(1);
-    }
+    }*/
     //prompts and function calls   
     while (1) 
     {
@@ -291,7 +304,7 @@ int main(int argc, char * argv[])
         	    close(s);
         	    exit(1);
     	    }
-            pthread_join(thread,NULL);
+            //pthread_join(thread,NULL);
             close(s);
             return 0;
         } 
