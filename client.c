@@ -13,64 +13,28 @@
 
 #define BUFFER 8128
 
-//upload function 
-int upld(int s)
+int private_message(int s)
 {
-    //send upld action
-  char action [BUFFER];
-  printf("Enter string to send\n");
-  scanf("%s",action);
-    int sizeSent;
-    //char action [BUFFER] = "UPLD\0";
-    if ((sizeSent = send(s, action, strlen(action), 0)) < 0)
+    //send P to server
+    char action[BUFFER]="P\0";
+    int sendSize;
+    if((sendSize = send(s, action, strlen(action), 0))<0)
     {
-        perror("Error sending action\n");
+        perror("Error sending the P command\n");
         close(s);
-        //free(buf);
-        //fclose(fp);
         exit(1);
     }
-    
-    /*int rSize;
-    char rBuffer[BUFFER];
-    if ((rSize = recv(s, rBuffer, BUFFER, 0)) <= 0) 
+    int rSize;
+    char userList[BUFFER];
+    if((rSize=recv(s, userList, BUFFER, 0))<=0)
     {
-        perror("Error receiving First ack\n");
+        perror("Error receiving user list from server\n");
         close(s);
-        printf("size of received: %d\n", rSize);
-        printf("From Server: %s\n", rBuffer);
         exit(1);
     }
-    if (strcmp(rBuffer, "ACK") == 0)
-    { 
-        char sizeFile [BUFFER];
-        
-        int tmpInt = (int)(strlen(buf));
-        uint32_t sizeOfFile = htonl(tmpInt);
-        sprintf(sizeFile, "%" PRIu32, sizeOfFile);
-        printf("%" PRIu32 " yeet\n", sizeOfFile);
-        
-        if ((sizeSent = send(s, sizeFile, strlen(sizeFile), 0)) < 0)
-        {
-            perror("Error sending sizeFile\n");
-            close(s);
-            free(buf);
-            fclose(fp);
-            exit(1);
-        }
-        if ((sizeSent = send(s, buf, strlen(buf), 0)) < 0)
-        {
-            perror("Error sending UPLD file\n");
-            close(s);
-            free(buf);
-            fclose(fp);
-            exit(1);
-        }
-    }
-    */
-       return 0;
-}
 
+
+}
 int main(int argc, char * argv[])
 {
 	struct hostent *hp;
@@ -213,32 +177,36 @@ int main(int argc, char * argv[])
     //prompts and function calls   
     while (1) 
     {
-        printf("Enter a command to perform:\n\t");
-        printf("DWLD: Download\n\tUPLD: Upload\n\tLIST: List\n\tMDIR: ");
-        printf("Make Directory\n\tRDIR: Remove Directory\n\tCDIR: ");
-        printf("Change Directory\n\tDELF: Delete File\n\tQUIT: Exit\n");
-        
+        printf("Enter a command to perform:\n");
+        printf("P for private message\n");
+        printf("B for broadcast message\n");
+        printf("E for exit\n");
+
         char inputAction [BUFFER];
         scanf("%s", inputAction);
-        if (strcmp(inputAction, "UPLD") == 0)
+        if (strcmp(inputAction, "P") == 0)
         {
-            printf("UPLD\n");
-            upld(s);
+            private_message(s);
+        }
+        else if (strcmp(inputAction, "B") == 0)
+        {
+           broadcast_message(s);
         } 
-       
-        else if (strcmp(inputAction, "QUIT") == 0)
+        else if (strcmp(inputAction, "E") == 0)
         {
             int sizeSent;
-	        char action [BUFFER] = "QUIT\0";
+	        char action [BUFFER] = "E\0";
     	    if ((sizeSent = send(s, action, strlen(action), 0)) < 0)
     	    {
-        	    perror("Error sending action MDIR\n");
+        	    perror("Error sending action E\n");
         	    close(s);
         	    exit(1);
     	    }
             close(s);
             return 0;
-        } else {
+        } 
+        else 
+        {
             printf("error: improper action: try again\n");
         } 
     }
