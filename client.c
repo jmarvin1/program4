@@ -103,6 +103,19 @@ int broadcast_message(int s){
     printf("%s",confirm);
     return 0;
 }
+void *handle_server_stuff(void *sock){
+    //handle lines from other clients
+    while(1){
+
+        int s = *(int *)sock;
+        int rSize;
+        char message[BUFFER];
+        rSize=recv(s, message, BUFFER, 0);
+        printf("%s\n",message);
+   }
+   return 0;
+
+}
 int main(int argc, char * argv[])
 {
 	struct hostent *hp;
@@ -209,13 +222,13 @@ int main(int argc, char * argv[])
     {
         //password given was good
         //send RTS
-        char action[BUFFER]= "RTS\0";
+        /*char action[BUFFER]= "RTS\0";
         if((sizeSent = send(s, action, strlen(action),0))< 0)
         {
             perror("Error sending RTS\n");
             close(s);
             exit(1);
-        }
+        }*/
     }
     else
     {
@@ -241,7 +254,15 @@ int main(int argc, char * argv[])
             }
          } 
      }
-    
+    //create thread to handle messages from other clients
+    pthread_t thread;
+    int rc = pthread_create(&thread, NULL, handle_server_stuff, (void*)&s);
+    if(rc)
+    {
+        perror("Error creating thread\n");
+        close(s);
+        exit(1);
+    }
     //prompts and function calls   
     while (1) 
     {
@@ -270,6 +291,7 @@ int main(int argc, char * argv[])
         	    close(s);
         	    exit(1);
     	    }
+            pthread_join(thread,NULL);
             close(s);
             return 0;
         } 
