@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include <ctype.h>
 #include <sys/time.h> 
-
+#include <pthread.h>
 #define BUFFER 8128
 
 int private_message(int s)
@@ -24,6 +24,7 @@ int private_message(int s)
         close(s);
         exit(1);
     }
+    //recv the list of users from the server
     int rSize;
     char userList[BUFFER];
     if((rSize=recv(s, userList, BUFFER, 0))<=0)
@@ -32,8 +33,75 @@ int private_message(int s)
         close(s);
         exit(1);
     }
-
-
+    char  userChoice[BUFFER];
+    printf("%s",userList);
+    printf("Choose an user from the list to talk to: \n");
+    scanf("%s",userChoice);
+    //send user choice
+    if((sendSize = send(s,userChoice, strlen(userChoice), 0))<0)
+    {
+        perror("Error sending the desired user to talk to\n");
+        close(s);
+        exit(1);
+    }
+    //send message
+    char message[BUFFER];
+    printf("Enter the message you want to send: ");
+    if((sendSize = send(s, message, strlen(message), 0))<0)
+    {
+        perror("Error sending the message\n");
+        close(s);
+        exit(1);
+    }
+    //client recv confirmation from server that comm went through
+    char confirm[BUFFER];
+    if((rSize=recv(s,confirm, BUFFER, 0))<=0)
+    {
+        perror("Error receiving confirmation from server that message went through\n");
+        close(s);
+        exit(1);
+    }
+    printf("%s",confirm);
+    return 0;
+}
+int broadcast_message(int s){
+     //send B to server
+    char action[BUFFER]="B\0";
+    int sendSize;
+    if((sendSize = send(s, action, strlen(action), 0))<0)
+    {
+        perror("Error sending the B command\n");
+        close(s);
+        exit(1);
+    }
+    //recv the ack 
+    int rSize;
+    char ack[BUFFER];
+    if((rSize=recv(s, ack, BUFFER, 0))<=0)
+    {
+        perror("Error receiving acknowledgement from the server\n");
+        close(s);
+        exit(1);
+    }
+    //send message
+    char message[BUFFER];
+    printf("Enter the message you want to send: ");
+    if((sendSize = send(s, message, strlen(message), 0))<0)
+    {
+        perror("Error sending the message\n");
+        close(s);
+        exit(1);
+    }
+    //client recv confirmation from server that comm went through
+    char confirm[BUFFER];
+    if((rSize=recv(s,confirm, BUFFER, 0))<=0)
+    {
+        perror("Error receiving confirmation from server that message went through\n");
+        close(s);
+        exit(1);
+    }
+    printf("%s",confirm);
+    return 0;
 }
 int main(int argc, char * argv[])
 {
