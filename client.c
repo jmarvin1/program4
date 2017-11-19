@@ -12,8 +12,8 @@
 #include <sys/time.h> 
 #include <pthread.h>
 #define BUFFER 8128
-
-int private_message(int s)
+int ACTIVE = 1;
+int private_message_action(int s)
 {
     //send P to server
     char action[BUFFER]="P\0";
@@ -24,29 +24,21 @@ int private_message(int s)
         close(s);
         exit(1);
     }
+    return 0;
+}
     //recv the list of users from the server
-    int rSize;
+    /*int rSize;
     char userList[BUFFER];
     if((rSize=recv(s, userList, BUFFER, 0))<=0)
     {
         perror("Error receiving user list from server\n");
         close(s);
         exit(1);
-    }
-    while(strlen(userList)<=0){
-        printf("Entering recv loop\n");
-        if((rSize=recv(s, userList, BUFFER, 0)<=0))
-        {
-            perror("Error receiving user list in loop\n");
-            close(s);
-            exit(1);
-        }
-   }
-
-    char  userChoice[BUFFER];
-    //printf("Choose a user from the list to print to: \n");
-    printf("LIST: %s\n",userList);
-    fflush(stdout);
+    }*/
+    
+int private_message_user_choice(int s){
+    int sendSize;
+    char userChoice[BUFFER];
     printf("Choose an user from the list to talk to: \n");
     scanf("%s",userChoice);
     //send user choice
@@ -56,7 +48,12 @@ int private_message(int s)
         close(s);
         exit(1);
     }
+    return 0;
+}
+ 
+int private_message_send_message(int s){
     //send message
+    int sendSize;
     char message[BUFFER];
     printf("Enter the message you want to send: ");
     scanf("%s",message);
@@ -66,8 +63,10 @@ int private_message(int s)
         close(s);
         exit(1);
     }
+    return 0;
+}
     //client recv confirmation from server that comm went through
-    char confirm[BUFFER];
+   /* char confirm[BUFFER];
     if((rSize=recv(s,confirm, BUFFER, 0))<=0)
     {
         perror("Error receiving confirmation from server that message went through\n");
@@ -75,9 +74,9 @@ int private_message(int s)
         exit(1);
     }
     printf("%s",confirm);
-    return 0;
-}
-int broadcast_message(int s){
+    return 0;*/
+
+int broadcast_message_action(int s){
      //send B to server
     char action[BUFFER]="B\0";
     int sendSize;
@@ -87,16 +86,20 @@ int broadcast_message(int s){
         close(s);
         exit(1);
     }
+    return 0;
+}
     //recv the ack 
-    int rSize;
+   /* int rSize;
     char ack[BUFFER];
     if((rSize=recv(s, ack, BUFFER, 0))<=0)
     {
         perror("Error receiving acknowledgement from the server\n");
         close(s);
         exit(1);
-    }
+    }*/
     //send message
+int broadcast_send_message(int s){
+    int sendSize;
     char message[BUFFER];
     printf("Enter the message you want to send: ");
     if((sendSize = send(s, message, strlen(message), 0))<0)
@@ -105,8 +108,10 @@ int broadcast_message(int s){
         close(s);
         exit(1);
     }
+    return 0;
+}
     //client recv confirmation from server that comm went through
-    char confirm[BUFFER];
+    /*char confirm[BUFFER];
     if((rSize=recv(s,confirm, BUFFER, 0))<=0)
     {
         perror("Error receiving confirmation from server that message went through\n");
@@ -115,16 +120,44 @@ int broadcast_message(int s){
     }
     printf("%s",confirm);
     return 0;
-}
+    */
+
 void *handle_server_stuff(void *sock){
     //handle lines from other clients
-    while(1){
+    while(ACTIVE){
 
         int s = *(int *)sock;
         int rSize;
         char message[BUFFER];
         rSize=recv(s, message, BUFFER, 0);
-        printf("%s\n",message);
+        //check to see if it's a data message
+        char * token = strtok(message," ");
+        if(strcmp(token,"USERLIST")==0)
+        {
+            printf("%s\n",message);
+            private_message_user_choice(s);
+        }
+        else if(strcmp(message, "ACKUSERCHOICE")==0)
+        {
+            private_message_send_message(s);
+        }
+        else if(strcmp(message, "ACKPRIVATEMESSAGESENT")==0)
+        {
+            printf("%s\n",message);
+        }
+        else if(strcmp(message, "ACKB")==0)
+        {
+            broadcast_send_message(s);
+        }
+        else if(strcmp(message, "ACKBROADCASTMESSAGESENT")==0)
+        {    
+            printf("%s\n",message);
+        }
+        else
+        {
+            printf("%s\n",message);
+        }
+        bzero(message,BUFFER);
    }
    return 0;
 
@@ -268,14 +301,14 @@ int main(int argc, char * argv[])
          } 
      }
     //create thread to handle messages from other clients
-    //pthread_t thread;
-    /*int rc = pthread_create(&thread, NULL, handle_server_stuff, (void*)&s);
+    pthread_t thread;
+    int rc = pthread_create(&thread, NULL, handle_server_stuff, (void*)&s);
     if(rc)
     {
         perror("Error creating thread\n");
         close(s);
         exit(1);
-    }*/
+    }
     //prompts and function calls   
     while (1) 
     {
@@ -288,11 +321,11 @@ int main(int argc, char * argv[])
         scanf("%s", inputAction);
         if (strcmp(inputAction, "P") == 0)
         {
-            private_message(s);
+            private_message_action(s);
         }
         else if (strcmp(inputAction, "B") == 0)
         {
-           broadcast_message(s);
+           broadcast_message_action(s);
         } 
         else if (strcmp(inputAction, "E") == 0)
         {
@@ -304,7 +337,8 @@ int main(int argc, char * argv[])
         	    close(s);
         	    exit(1);
     	    }
-            //pthread_join(thread,NULL);
+            ACTIVE=0;
+            pthread_join(thread,NULL);
             close(s);
             return 0;
         } 
