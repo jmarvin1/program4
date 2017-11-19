@@ -335,8 +335,8 @@ void addName(const char * name, int sock) {
     for (i = 0; i < currUsers; ++i) {
         if (clients[i].sInt = sock) {
             strcpy(clients[i].uname, name);
+            return;
         }
-        return;
     }
 
     printf("No user found\n");
@@ -399,6 +399,31 @@ void sendPrivate(int sock, char * thisUser) {
     printf("Private message confirmation sent\n");
 }
 
-
+void sendBroadcast(int sock, char * thisUser) {
+    char client_message[2000];
+    char * message = "\nBroadcast message: ";
+    write(sock, message, strlen(message));
+    memset(client_message, 0, 2000);
+    recv(sock, client_message, 2000, 0);
+    int i;
+    for (i = 0; i < currUsers; ++i) {
+        if (strcmp(thisUser, clients[i].uname) == 0) {
+            continue;
+        }
+        char newM[3000];
+        strcat(newM, "Message from user ");
+        strcat(newM, thisUser);
+        strcat(newM, ":\n");
+        strcat(newM, client_message);
+        printf("sending new message to user\n");
+        write(clients[i].sInt, newM, strlen(newM));
+        printf("sent message to %s\n", clients[i].uname);
+        char con[] = "Broadcas Message sent\n";
+        write(sock, con, strlen(con));    
+        printf("Broadcast message confirmation sent\n");
+    }
+    char con[] = "Broadcast Message sent\n";
+    write(sock, con, strlen(con));    
+}
 
 
