@@ -236,7 +236,11 @@ int main(int argc, char * argv[])
     {   
         //printf(">> "); 
         char inputAction [BUFFER];
-        scanf("%s", inputAction);
+        //scanf("%[^\n]s", inputAction);
+        fgets(inputAction, BUFFER - 1, stdin);
+        inputAction[strlen(inputAction) - 1] = '\0';
+        //inputAction[strcspn(inputAction, "\n")] ='\0';
+        printf("got: %s\n", inputAction);
         if (strcmp(inputAction, "P") == 0)
         {
             private_message_action(s);

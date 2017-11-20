@@ -29,13 +29,13 @@ struct client {
 
 
 struct client clients[100];
-int currUsers;
+int currUsers = 0;
 
 //the thread function
 void *connection_handler(void *);
 int checkUsername(const char *);
 void sendPrivate(int, char *);
-void broadcast(int);
+void sendBroadcast(int, char *);
 const char * getUsers(const char *);
 int writeUP(const char *, const char *);
 const char * getPassword(const char *);
@@ -92,7 +92,9 @@ int main(int argc , char *argv[])
         }
         puts("Connection accepted");
         
+        printf("sock is %d/n", client_sock);
         clients[currUsers++].sInt = client_sock;
+        printf("increment curUsers\n#: %d\n", currUsers);
 
         if( pthread_create( &thread_id , NULL ,  connection_handler , (void*) &client_sock) < 0)
         {
@@ -236,19 +238,14 @@ void *connection_handler(void *socket_desc)
     }
     //end of string marker
     client_message[read_size] = '\0';
-    printf("message: %s\n", client_message);
     
     int check = checkUsernames(client_message);
     char thisUser[100];
     strcpy(thisUser, client_message);
-    printf("this user is %s\n", thisUser);
     
     if (check == -1) {
-        printf("Welcome new user!\n");     
-        printf("Enter a password for us to save!\n");
         message = "Enter a password for us to save!\n";
     } else {
-        printf("Welcome returning user!\nEnter password:");
         message = "Welcome returning user!\nEnter password:";
     }
     //Send the message back to client
@@ -258,16 +255,11 @@ void *connection_handler(void *socket_desc)
 
     client_message[read_size] = '\0';
     if (check >= 0) {
-     //   printf("Check: %d\n", check);
-        printf("returning user\n");
         while(1) {
- //           printf("cpassword: %s, gpassword: %s\n", client_message, getPassword(thisUser));
             if (strcmp(client_message, getPassword(thisUser)) == 0) {
                 printf("password matched\n");
                 break;
             } else {
-       //         printf("these arent the same\n%s|\n%s|\n", client_message, getPassword(thisUser));
-                printf("incorrect password.\nTry again:");
                 message = "Incorrect password.\nTry again:";
                 write(sock, message, strlen(message));
                 memset(client_message, 0, 2000);
@@ -275,7 +267,6 @@ void *connection_handler(void *socket_desc)
             }
         }
     } else {
-   //     printf("new user, creating password\n");
         printf("password created for user: %s\npassword: %s\n", thisUser, client_message);
         writeUP(thisUser, client_message);
     }
@@ -296,8 +287,6 @@ void *connection_handler(void *socket_desc)
 
     const char * prompt = "Let's chat!\n\n\n";
 
-    //write(sock , prompt, strlen(prompt));
-     
     //Receive a message from client
     while( (read_size = recv(sock , client_message , 2000 , 0)) > 0 )
     {
@@ -305,10 +294,8 @@ void *connection_handler(void *socket_desc)
 		client_message[read_size] = '\0';
         printf("Message: %s\n", client_message);	
         if (strcmp(client_message, "B") == 0) {
-            printf("broadcast\n");
-            message = "broad\n";
+            sendBroadcast(sock, thisUser);
         } else if (strcmp(client_message, "P") == 0) {
-            printf("private message\n");
             sendPrivate(sock, thisUser);
         } else if (strcmp(client_message, "E") == 0) {
             printf("exit\n");
@@ -329,6 +316,9 @@ void *connection_handler(void *socket_desc)
     if(read_size == 0)
     {
         puts("Client disconnected");
+        currUsers--;
+        clients[currUsers].sInt = 0;
+        strcpy(clients[currUsers].uname, "");
         fflush(stdout);
     }
     else if(read_size == -1)
@@ -344,7 +334,7 @@ void addName(const char * name, int sock) {
     int i;
 
     for (i = 0; i < currUsers; ++i) {
-        if (clients[i].sInt = sock) {
+        if (clients[i].sInt == sock) {
             strcpy(clients[i].uname, name);
             return;
         }
@@ -359,7 +349,7 @@ char * printActive(char * name) {
     printf("Activer Users:\n");
     for (i = 0; i < currUsers; i++) {
         //if (strcmp(name, clients[i].uname) != 0) {
-            printf("%s\n", clients[i].uname);
+            printf("adding: %s\n", clients[i].uname);
             int newSize = strlen(result) + strlen(clients[i].uname) + 1;
             char * newBuffer = (char *)malloc(newSize);
             strcpy(newBuffer,result);
@@ -407,7 +397,7 @@ void sendPrivate(int sock, char * thisUser) {
     printf("received mess\n");
     
     char newM[3000];
-    memset(newM, 0, 300);
+    memset(newM, 0, 3000);
     strcat(newM, "Message from user ");
     strcat(newM, thisUser);
     strcat(newM, ":\n");
@@ -422,27 +412,26 @@ void sendPrivate(int sock, char * thisUser) {
 }
 
 void sendBroadcast(int sock, char * thisUser) {
-    char client_message[2000];
+    char cmessage[2000];
     char * message = "ACKB";
     write(sock, message, strlen(message));
-    memset(client_message, 0, 2000);
-    recv(sock, client_message, 2000, 0);
+    recv(sock, cmessage, 2000, 0);
+    printf("message is \n%s | %d\n", cmessage, strlen(cmessage));
+    char newM[3000];
+    strcat(newM, "Message from user ");
+    strcat(newM, thisUser);
+    strcat(newM, ":\n");
+    strcat(newM, cmessage);
     int i;
     for (i = 0; i < currUsers; ++i) {
         if (strcmp(thisUser, clients[i].uname) == 0) {
             continue;
         }
-        char newM[3000];
-        strcat(newM, "Message from user ");
-        strcat(newM, thisUser);
-        strcat(newM, ":\n");
-        strcat(newM, client_message);
         printf("sending new message to user\n");
+        printf("Bmessage: %s\n", newM);
         write(clients[i].sInt, newM, strlen(newM));
         printf("sent message to %s\n", clients[i].uname);
         char con[] = "Broadcas Message sent\n";
-        write(sock, con, strlen(con));    
-        printf("Broadcast message confirmation sent\n");
     }
     char con[] = "ACKBROADCASTMESSAGESENT";
     write(sock, con, strlen(con));    
