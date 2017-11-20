@@ -1,1 +1,16 @@
 James Marvin (jmarvin1) & Michael Burke (mburke18)
+
+Files in the client directory: client.c and Makefile
+Files in server directory: server.c Makefile test.c users.txt 
+
+To run the server
+Go to server directory
+$ make
+$ ./chatserver
+
+To run the client
+Go to client directory
+$ ./chatclient student01.cse.nd.edu 41030 [name of user]
+
+
+You enter commands and messages on the next line after the output that has already been displayed on the screen. The options only come up once on the screen for each client to make the chat a little more condense. 
