@@ -37,32 +37,32 @@ int private_message_action(int s)
     }*/
     
 int private_message_user_choice(int s){
-    int sendSize;
-    char userChoice[BUFFER];
+    //int sendSize;
+    //char userChoice[BUFFER];
     printf("Choose an user from the list to talk to: \n");
-    scanf("%s",userChoice);
+    //scanf("%s",userChoice);
     //send user choice
-    if((sendSize = send(s,userChoice, strlen(userChoice), 0))<0)
+    /*if((sendSize = send(s,userChoice, strlen(userChoice), 0))<0)
     {
         perror("Error sending the desired user to talk to\n");
         close(s);
         exit(1);
-    }
+    }*/
     return 0;
 }
  
 int private_message_send_message(int s){
     //send message
-    int sendSize;
-    char message[BUFFER];
-    printf("Enter the message you want to send: ");
-    scanf("%s",message);
-    if((sendSize = send(s, message, strlen(message), 0))<0)
+    //int sendSize;
+    //char message[BUFFER];
+    printf("Enter the message you want to send: \n");
+    //scanf("%s",message);
+    /*if((sendSize = send(s, message, strlen(message), 0))<0)
     {
         perror("Error sending the message\n");
         close(s);
         exit(1);
-    }
+    }*/
     return 0;
 }
     //client recv confirmation from server that comm went through
@@ -99,15 +99,15 @@ int broadcast_message_action(int s){
     }*/
     //send message
 int broadcast_send_message(int s){
-    int sendSize;
-    char message[BUFFER];
-    printf("Enter the message you want to send: ");
-    if((sendSize = send(s, message, strlen(message), 0))<0)
+    //int sendSize;
+    //char message[BUFFER];
+    printf("Enter the message you want to send: \n");
+    /*if((sendSize = send(s, message, strlen(message), 0))<0)
     {
         perror("Error sending the message\n");
         close(s);
         exit(1);
-    }
+    }*/
     return 0;
 }
     //client recv confirmation from server that comm went through
@@ -129,9 +129,12 @@ void *handle_server_stuff(void *sock){
         int s = *(int *)sock;
         int rSize;
         char message[BUFFER];
+        char message2[BUFFER+1];
+        
         rSize=recv(s, message, BUFFER, 0);
+        strcpy(message2,message);
         //check to see if it's a data message
-        char * token = strtok(message," ");
+        char * token = strtok(message2," ");
         if(strcmp(token,"USERLIST")==0)
         {
             printf("%s\n",message);
@@ -158,6 +161,7 @@ void *handle_server_stuff(void *sock){
             printf("%s\n",message);
         }
         bzero(message,BUFFER);
+        bzero(message2,BUFFER);
    }
    return 0;
 
@@ -309,14 +313,15 @@ int main(int argc, char * argv[])
         close(s);
         exit(1);
     }
-    //prompts and function calls   
-    while (1) 
-    {
-        printf("Enter a command to perform:\n");
-        printf("P for private message\n");
-        printf("B for broadcast message\n");
-        printf("E for exit\n");
-
+    //prompts and function calls    
+    
+    printf("Enter a command to perform:\n");
+    printf("P for private message\n");
+    printf("B for broadcast message\n");
+    printf("E for exit\n");
+    while(1)
+    {   
+        //printf(">> "); 
         char inputAction [BUFFER];
         scanf("%s", inputAction);
         if (strcmp(inputAction, "P") == 0)
@@ -341,10 +346,17 @@ int main(int argc, char * argv[])
             pthread_join(thread,NULL);
             close(s);
             return 0;
+            //exit(0);
         } 
         else 
         {
-            printf("error: improper action: try again\n");
+            //printf("error: improper action: try again\n");
+            if(sizeSent = send(s, inputAction, strlen(inputAction), 0)<0)
+            {
+                perror("Error sending action\n");
+                close(s);
+                exit(1);
+            }
         } 
     }
     close(s);
