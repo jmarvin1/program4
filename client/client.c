@@ -260,10 +260,9 @@ int main(int argc, char * argv[])
         	    exit(1);
     	    }
             ACTIVE=0;
-            pthread_join(thread,NULL);
+            pthread_cancel(thread);
             close(s);
-            return 0;
-            //exit(0);
+            exit(0);
         } 
         else 
         {
