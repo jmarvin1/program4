@@ -26,56 +26,16 @@ int private_message_action(int s)
     }
     return 0;
 }
-    //recv the list of users from the server
-    /*int rSize;
-    char userList[BUFFER];
-    if((rSize=recv(s, userList, BUFFER, 0))<=0)
-    {
-        perror("Error receiving user list from server\n");
-        close(s);
-        exit(1);
-    }*/
-    
+   
 int private_message_user_choice(int s){
-    //int sendSize;
-    //char userChoice[BUFFER];
-    printf("Choose an user from the list to talk to: \n");
-    //scanf("%s",userChoice);
-    //send user choice
-    /*if((sendSize = send(s,userChoice, strlen(userChoice), 0))<0)
-    {
-        perror("Error sending the desired user to talk to\n");
-        close(s);
-        exit(1);
-    }*/
-    return 0;
+   printf("Choose an user from the list to talk to: \n");
+   return 0;
 }
  
 int private_message_send_message(int s){
-    //send message
-    //int sendSize;
-    //char message[BUFFER];
-    printf("Enter the message you want to send: \n");
-    //scanf("%s",message);
-    /*if((sendSize = send(s, message, strlen(message), 0))<0)
-    {
-        perror("Error sending the message\n");
-        close(s);
-        exit(1);
-    }*/
-    return 0;
+   printf("Enter the message you want to send: \n");
+   return 0;
 }
-    //client recv confirmation from server that comm went through
-   /* char confirm[BUFFER];
-    if((rSize=recv(s,confirm, BUFFER, 0))<=0)
-    {
-        perror("Error receiving confirmation from server that message went through\n");
-        close(s);
-        exit(1);
-    }
-    printf("%s",confirm);
-    return 0;*/
-
 int broadcast_message_action(int s){
      //send B to server
     char action[BUFFER]="B\0";
@@ -88,39 +48,11 @@ int broadcast_message_action(int s){
     }
     return 0;
 }
-    //recv the ack 
-   /* int rSize;
-    char ack[BUFFER];
-    if((rSize=recv(s, ack, BUFFER, 0))<=0)
-    {
-        perror("Error receiving acknowledgement from the server\n");
-        close(s);
-        exit(1);
-    }*/
-    //send message
 int broadcast_send_message(int s){
-    //int sendSize;
-    //char message[BUFFER];
     printf("Enter the message you want to send: \n");
-    /*if((sendSize = send(s, message, strlen(message), 0))<0)
-    {
-        perror("Error sending the message\n");
-        close(s);
-        exit(1);
-    }*/
     return 0;
 }
-    //client recv confirmation from server that comm went through
-    /*char confirm[BUFFER];
-    if((rSize=recv(s,confirm, BUFFER, 0))<=0)
-    {
-        perror("Error receiving confirmation from server that message went through\n");
-        close(s);
-        exit(1);
-    }
-    printf("%s",confirm);
-    return 0;
-    */
+    
 
 void *handle_server_stuff(void *sock){
     //handle lines from other clients
@@ -186,11 +118,7 @@ int main(int argc, char * argv[])
 		fprintf(stderr,"Inappropriate number of arguments. Need 2 arguments\n");
 		exit(1);
 	}
-	//check username against users.txt
-    //if((filepointer=fopen("users.txt","r"))!=NULL){
-        //read file
-	//prepare hostname 
-	hp = gethostbyname(host);
+    hp = gethostbyname(host);
 	if(!hp)
 	{
 		fprintf(stderr, "Can't find host\n");
@@ -225,9 +153,7 @@ int main(int argc, char * argv[])
     {
         perror("Error receiving First ack\n");
         close(s);
-        //printf("size of received: %d\n", rSize);
-        //printf("From Server: %s\n", rBuffer);
-        exit(1);
+       exit(1);
     }
     //send username
     int sizeSent;
@@ -235,9 +161,7 @@ int main(int argc, char * argv[])
     {
         perror("Error sending sizeFile\n");
         close(s);
-        //free(buf);
-        //fclose(fp);
-        exit(1);
+       exit(1);
     }
     //receive prompt for password
     char passBuff[BUFFER];
@@ -251,13 +175,10 @@ int main(int argc, char * argv[])
     printf("%s\n",passBuff);
     scanf("%s",pass);
     //send pass to server
-    // int sizeSent;
     if ((sizeSent = send(s, pass, strlen(pass), 0)) < 0)
     {
         perror("Error sending password\n");
         close(s);
-        //free(buf);
-        //fclose(fp);
         exit(1);
     }
    //wait for success/failure of password given
@@ -271,14 +192,6 @@ int main(int argc, char * argv[])
     if(strcmp(successBuff,"SUCCESS")==0)
     {
         //password given was good
-        //send RTS
-        /*char action[BUFFER]= "RTS\0";
-        if((sizeSent = send(s, action, strlen(action),0))< 0)
-        {
-            perror("Error sending RTS\n");
-            close(s);
-            exit(1);
-        }*/
     }
     else
     {
