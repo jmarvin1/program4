@@ -285,7 +285,7 @@ void *connection_handler(void *socket_desc)
 
     const char * prompt = "Let's chat!\n\n\n";
 
-    write(sock , prompt, strlen(prompt));
+    //write(sock , prompt, strlen(prompt));
      
     //Receive a message from client
     while( (read_size = recv(sock , client_message , 2000 , 0)) > 0 )
@@ -298,7 +298,7 @@ void *connection_handler(void *socket_desc)
             message = "broad\n";
         } else if (strcmp(client_message, "P") == 0) {
             printf("private message\n");
-            message = "private message, input user to chat\n";
+            sendPrivate(sock, thisUser);
         } else if (strcmp(client_message, "E") == 0) {
             printf("exit\n");
             message = "exit\n";
@@ -308,10 +308,10 @@ void *connection_handler(void *socket_desc)
         }
 
 		//Send the message back to client
-        write(sock , message, strlen(message));
+        //write(sock , message, strlen(message));
 		memset(client_message, 0, 2000);
 
-        write(sock , prompt, strlen(prompt));
+        //write(sock , prompt, strlen(prompt));
         memset(client_message, 0, 2000);
     }
      
@@ -335,15 +335,14 @@ void addName(const char * name, int sock) {
     for (i = 0; i < currUsers; ++i) {
         if (clients[i].sInt = sock) {
             strcpy(clients[i].uname, name);
+            return;
         }
-        return;
     }
 
     printf("No user found\n");
 }
 
 char * printActive(char * name) {
-
     char * result = "Active Users\n";
     int i;
     printf("Activer Users:\n");
@@ -363,18 +362,68 @@ char * printActive(char * name) {
     return result;
 }
 void sendPrivate(int sock, char * thisUser) {
-
     char client_message[2000];
     char * message = printActive(thisUser);
+    printf("sending list\n");
     write(sock, message, strlen(message));
+    printf("sent list\n");
     memset(client_message, 0, 2000);
+    printf("receiving user\n");
     recv(sock, client_message, 2000, 0);
+    printf("received user\n");
     char to[100];
     strcpy(to, message);
     memset(client_message, 0, 2000);
+    printf("reciving mess\n");
     recv(sock, client_message, 2000, 0);
-    //sendPrivate(client_message, thisUser, to);
+    printf("received mess\n");
+    int i, toSock;
 
-
-
+    for (i = 0; i < currUsers; ++i) {
+        if (strcmp(to, clients[i].uname)) {
+            toSock = clients[i].sInt;
+            break;
+        }
+    }
+    
+    char newM[3000];
+    strcat(newM, "Message from user ");
+    strcat(newM, thisUser);
+    strcat(newM, ":\n");
+    strcat(newM, client_message);
+    printf("sending new message to user\n");
+    write(toSock, newM, strlen(newM));
+    printf("sent message to suer p\n");
+    char con[] = "Private Message sent\n";
+    write(sock, con, strlen(con));    
+    printf("Private message confirmation sent\n");
 }
+
+void sendBroadcast(int sock, char * thisUser) {
+    char client_message[2000];
+    char * message = "\nBroadcast message: ";
+    write(sock, message, strlen(message));
+    memset(client_message, 0, 2000);
+    recv(sock, client_message, 2000, 0);
+    int i;
+    for (i = 0; i < currUsers; ++i) {
+        if (strcmp(thisUser, clients[i].uname) == 0) {
+            continue;
+        }
+        char newM[3000];
+        strcat(newM, "Message from user ");
+        strcat(newM, thisUser);
+        strcat(newM, ":\n");
+        strcat(newM, client_message);
+        printf("sending new message to user\n");
+        write(clients[i].sInt, newM, strlen(newM));
+        printf("sent message to %s\n", clients[i].uname);
+        char con[] = "Broadcas Message sent\n";
+        write(sock, con, strlen(con));    
+        printf("Broadcast message confirmation sent\n");
+    }
+    char con[] = "Broadcast Message sent\n";
+    write(sock, con, strlen(con));    
+}
+
+
