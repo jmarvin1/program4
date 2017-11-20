@@ -11,6 +11,15 @@
 #include<arpa/inet.h> //inet_addr
 #include<unistd.h>    //write
 #include<pthread.h> //for threading , link with lpthread
+#include <signal.h>
+
+static volatile int keepRunning = 1;
+
+void intHandler(int dummy) {
+    keepRunning = 0;
+    exit(1);
+}
+
 #define MAX_THREADS 10
 
 struct client {
@@ -35,6 +44,7 @@ char * printActive(char *);
 
 int main(int argc , char *argv[])
 {
+    signal(SIGINT, intHandler); 
     int socket_desc , client_sock , c;
     struct sockaddr_in server , client;
      
@@ -75,6 +85,7 @@ int main(int argc , char *argv[])
 	
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
+        
         if (currUsers >= MAX_THREADS) {
             puts("max number of connections reached. Accepting no more clients");
             continue;
@@ -343,7 +354,7 @@ void addName(const char * name, int sock) {
 }
 
 char * printActive(char * name) {
-    char * result = "Active Users\n";
+    char * result = "USERLIST ";
     int i;
     printf("Activer Users:\n");
     for (i = 0; i < currUsers; i++) {
@@ -372,36 +383,47 @@ void sendPrivate(int sock, char * thisUser) {
     recv(sock, client_message, 2000, 0);
     printf("received user\n");
     char to[100];
-    strcpy(to, message);
-    memset(client_message, 0, 2000);
-    printf("reciving mess\n");
-    recv(sock, client_message, 2000, 0);
-    printf("received mess\n");
-    int i, toSock;
+    strcpy(to, client_message);
+    int i, toSock = -1;
 
     for (i = 0; i < currUsers; ++i) {
-        if (strcmp(to, clients[i].uname)) {
+        if (strcmp(to, clients[i].uname) == 0) {
             toSock = clients[i].sInt;
             break;
         }
     }
     
+    char * error = "Incorrect user\n";
+    if (toSock == -1) {
+        write(sock, error, strlen(error));
+        return;
+    }
+
+    message = "ACKUSERCHOICE";
+    write(sock, message, strlen(message));
+    memset(client_message, 0, 2000);
+    printf("reciving mess\n");
+    recv(sock, client_message, 2000, 0);
+    printf("received mess\n");
+    
     char newM[3000];
+    memset(newM, 0, 300);
     strcat(newM, "Message from user ");
     strcat(newM, thisUser);
     strcat(newM, ":\n");
     strcat(newM, client_message);
     printf("sending new message to user\n");
+    printf("messages : %s\n", newM);
     write(toSock, newM, strlen(newM));
     printf("sent message to suer p\n");
-    char con[] = "Private Message sent\n";
+    char con[] = "ACKPRIVATEMESSAGESENT";
     write(sock, con, strlen(con));    
     printf("Private message confirmation sent\n");
 }
 
 void sendBroadcast(int sock, char * thisUser) {
     char client_message[2000];
-    char * message = "\nBroadcast message: ";
+    char * message = "ACKB";
     write(sock, message, strlen(message));
     memset(client_message, 0, 2000);
     recv(sock, client_message, 2000, 0);
@@ -422,7 +444,7 @@ void sendBroadcast(int sock, char * thisUser) {
         write(sock, con, strlen(con));    
         printf("Broadcast message confirmation sent\n");
     }
-    char con[] = "Broadcast Message sent\n";
+    char con[] = "ACKBROADCASTMESSAGESENT";
     write(sock, con, strlen(con));    
 }
 
